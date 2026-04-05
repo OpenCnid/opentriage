@@ -39,13 +39,23 @@ def read_json(path: Path) -> dict[str, Any]:
 
 
 def load_fingerprints(openlog_dir: Path) -> list[dict[str, Any]]:
-    """Load fingerprints from .openlog/fingerprints.json."""
+    """Load fingerprints from .openlog/fingerprints.json.
+
+    Handles two storage formats:
+    - List format: [{"slug": "...", "patterns": [...], ...}, ...]
+    - Dict format: {"fingerprints": {"slug": {"patterns": [...], ...}, ...}}
+    """
     fp_path = openlog_dir / "fingerprints.json"
     data = read_json(fp_path)
     if isinstance(data, list):
         return data
     if isinstance(data, dict) and "fingerprints" in data:
-        return data["fingerprints"]
+        fps = data["fingerprints"]
+        if isinstance(fps, list):
+            return fps
+        if isinstance(fps, dict):
+            # Embed slug as a field in each entry
+            return [{"slug": slug, **entry} for slug, entry in fps.items()]
     return []
 
 
