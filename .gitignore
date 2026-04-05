@@ -1,1 +1,5 @@
 *.pyc\n__pycache__/\n.openlog/\n*.egg-info/\ndist/\n.omc/
+__pycache__/
+*.pyc
+.venv/
+run-omc-team.sh
