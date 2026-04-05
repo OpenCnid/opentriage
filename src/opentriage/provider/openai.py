@@ -73,7 +73,7 @@ class OpenAIProvider:
             response = self._client.chat.completions.create(
                 model=model,
                 messages=messages,  # type: ignore[arg-type]
-                max_tokens=2048,
+                max_completion_tokens=2048,
             )
             return response.choices[0].message.content or ""
         except openai.AuthenticationError as e:
