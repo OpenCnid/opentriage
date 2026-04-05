@@ -592,7 +592,12 @@ def _cmd_approve(ot_dir: Path, ol_dir: Path, args: Any) -> None:
         fp_data = []
 
     if isinstance(fp_data, dict) and "fingerprints" in fp_data:
-        fp_data["fingerprints"].append(fingerprint)
+        fps = fp_data["fingerprints"]
+        if isinstance(fps, dict):
+            # Dict-keyed format: {slug: {patterns, ...}}
+            fps[fingerprint["slug"]] = {k: v for k, v in fingerprint.items() if k != "slug"}
+        else:
+            fps.append(fingerprint)
     elif isinstance(fp_data, list):
         fp_data.append(fingerprint)
     else:
