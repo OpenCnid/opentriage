@@ -128,6 +128,41 @@ class DiscordChannel:
         return False
 
 
+class OpenClawChannel:
+    """Route alerts through OpenClaw's messaging system via CLI."""
+
+    def __init__(self, channel: str = "discord", target: str = "") -> None:
+        self._channel = channel
+        self._target = target
+
+    def send(self, alert: dict) -> bool:
+        if not self._target:
+            return False
+        import subprocess
+
+        severity = alert.get("severity", "info").upper()
+        title = alert.get("title", "Alert")
+        body = alert.get("body", "")
+        action = alert.get("action_needed", "")
+
+        emoji = {"CRITICAL": "🔴", "HIGH": "🟠", "INFO": "🔵"}.get(severity, "⚪")
+        message = f"{emoji} **[{severity}] {title}**\n{body}"
+        if action:
+            message += f"\n\n**Action needed:** {action}"
+        if len(message) > 1900:
+            message = message[:1897] + "..."
+
+        try:
+            result = subprocess.run(
+                ["openclaw", "system", "event", "--text", message, "--mode", "now"],
+                capture_output=True, text=True, timeout=15,
+            )
+            return result.returncode == 0
+        except Exception as e:
+            log.warning("OpenClaw escalation failed: %s", e)
+            return False
+
+
 class SlackChannel:
     """POST block to a Slack webhook."""
 

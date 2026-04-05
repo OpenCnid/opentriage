@@ -9,6 +9,7 @@ from typing import Any
 
 from opentriage.escalation.channels import (
     DiscordChannel,
+    OpenClawChannel,
     SlackChannel,
     StdoutChannel,
     WebhookChannel,
@@ -39,6 +40,11 @@ def build_channels(config_esc: dict[str, Any]) -> list[tuple[str, Any]]:
             url = config_esc.get("slack_webhook_url", "")
             if url:
                 channels.append(("slack", SlackChannel(url)))
+        elif name == "openclaw":
+            target = config_esc.get("openclaw_target", "")
+            ch = config_esc.get("openclaw_channel", "discord")
+            if target:
+                channels.append(("openclaw", OpenClawChannel(channel=ch, target=target)))
     if not channels:
         channels.append(("stdout", StdoutChannel()))
     return channels
