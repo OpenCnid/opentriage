@@ -26,7 +26,8 @@ def build_triage_prompt(
         slug = fp.get("slug", "")
         first_pattern = (fp.get("patterns") or [""])[0][:80]
         severity = fp.get("severity") or "null"
-        remedy = (fp.get("remedy") or "")[:50]
+        raw_remedy = fp.get("remedy") or ""
+        remedy = (raw_remedy.get("description", "")[:50] if isinstance(raw_remedy, dict) else str(raw_remedy)[:50])
         fp_summary += f"  - {slug}: \"{first_pattern}\" severity={severity} remedy=\"{remedy}\"\n"
 
     candidate_hint = ""

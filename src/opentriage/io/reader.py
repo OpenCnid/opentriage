@@ -38,25 +38,58 @@ def read_json(path: Path) -> dict[str, Any]:
         return {}
 
 
+def normalize_remedy(remedy: Any) -> dict[str, Any] | None:
+    """Normalize a remedy field to structured format (F-AR02).
+
+    Handles:
+    - None / empty string -> None (no remedy)
+    - Plain string -> {"strategy": "escalate", "description": "<text>"}
+    - Dict -> returned as-is with defaults filled in
+    """
+    if remedy is None:
+        return None
+    if isinstance(remedy, str):
+        remedy = remedy.strip()
+        if not remedy:
+            return None
+        return {"strategy": "escalate", "description": remedy}
+    if isinstance(remedy, dict):
+        # Fill defaults for missing fields
+        remedy.setdefault("strategy", "escalate")
+        remedy.setdefault("description", "")
+        remedy.setdefault("relevant_files", [])
+        remedy.setdefault("test_command", "")
+        remedy.setdefault("fix_prompt", "")
+        remedy.setdefault("max_cost_usd", 2.0)
+        remedy.setdefault("requires_screenshot", False)
+        return remedy
+    return None
+
+
 def load_fingerprints(openlog_dir: Path) -> list[dict[str, Any]]:
     """Load fingerprints from .openlog/fingerprints.json.
 
     Handles two storage formats:
     - List format: [{"slug": "...", "patterns": [...], ...}, ...]
     - Dict format: {"fingerprints": {"slug": {"patterns": [...], ...}, ...}}
+
+    Normalizes remedy fields to structured format (F-AR02).
     """
     fp_path = openlog_dir / "fingerprints.json"
     data = read_json(fp_path)
+    fps: list[dict[str, Any]] = []
     if isinstance(data, list):
-        return data
-    if isinstance(data, dict) and "fingerprints" in data:
-        fps = data["fingerprints"]
-        if isinstance(fps, list):
-            return fps
-        if isinstance(fps, dict):
-            # Embed slug as a field in each entry
-            return [{"slug": slug, **entry} for slug, entry in fps.items()]
-    return []
+        fps = data
+    elif isinstance(data, dict) and "fingerprints" in data:
+        raw = data["fingerprints"]
+        if isinstance(raw, list):
+            fps = raw
+        elif isinstance(raw, dict):
+            fps = [{"slug": slug, **entry} for slug, entry in raw.items()]
+    # Normalize remedy fields
+    for fp in fps:
+        fp["remedy"] = normalize_remedy(fp.get("remedy"))
+    return fps
 
 
 def scan_events(

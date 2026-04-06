@@ -95,7 +95,22 @@ def build_remedy_context(
 ) -> str:
     """Build the remedy context string written to the temp file."""
     remedy = fingerprint.get("remedy", "")
-    return f"""Remedy: {remedy}
+    # Support structured remedy dicts (F-AR02)
+    if isinstance(remedy, dict):
+        remedy_text = remedy.get("description", "")
+        strategy = remedy.get("strategy", "escalate")
+        fix_prompt = remedy.get("fix_prompt", "")
+        relevant_files = remedy.get("relevant_files", [])
+        parts = [f"Strategy: {strategy}", f"Remedy: {remedy_text}"]
+        if fix_prompt:
+            parts.append(f"Fix prompt: {fix_prompt}")
+        if relevant_files:
+            parts.append(f"Relevant files: {', '.join(relevant_files)}")
+        remedy_str = "\n".join(parts)
+    else:
+        remedy_str = f"Remedy: {remedy}"
+
+    return f"""{remedy_str}
 
 Original error (f_raw): {event.get('f_raw', '')}
 
